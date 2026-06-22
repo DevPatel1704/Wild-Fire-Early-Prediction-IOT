@@ -1,0 +1,61 @@
+services:
+  kafka:
+    image: bitnami/kafka:3.7
+    environment:
+      KAFKA_CFG_NODE_ID: "1"
+      KAFKA_CFG_PROCESS_ROLES: "broker,controller"
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      KAFKA_CFG_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093"
+      KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092"
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    ports: ["9092:9092"]
+
+  influxdb:
+    image: influxdb:2.7
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: admin
+      DOCKER_INFLUXDB_INIT_PASSWORD: adminpass123
+      DOCKER_INFLUXDB_INIT_ORG: wildfire
+      DOCKER_INFLUXDB_INIT_BUCKET: sensors
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: dev-token
+    ports: ["8086:8086"]
+
+  api:
+    build: .
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000
+    environment: &env
+      KAFKA_BOOTSTRAP: kafka:9092
+      INFLUX_URL: http://influxdb:8086
+      INFLUX_TOKEN: dev-token
+      INFLUX_ORG: wildfire
+      INFLUX_BUCKET: sensors
+    ports: ["8000:8000"]
+    volumes: ["./artifacts:/app/artifacts"]
+    depends_on: [kafka, influxdb]
+
+  stream:
+    build: .
+    command: python -m stream.processor
+    environment: *env
+    volumes: ["./artifacts:/app/artifacts"]
+    depends_on: [kafka, influxdb, api]
+
+  simulator:
+    build: .
+    command: python -m iot.simulator --tick 1.0 --hot 6
+    environment: *env
+    volumes: ["./artifacts:/app/artifacts"]
+    depends_on: [kafka]
+
+  dashboard:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host"
+    environment:
+      VITE_API: http://api:8000
+    ports: ["3000:3000"]
+    volumes: ["./dashboard:/app"]
+    depends_on: [api]

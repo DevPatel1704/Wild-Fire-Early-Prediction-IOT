@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+artifacts/*.pt
+artifacts/*.json
+artifacts/*.db
+data/raw/*
+data/processed/*
+dashboard/node_modules/
+.env

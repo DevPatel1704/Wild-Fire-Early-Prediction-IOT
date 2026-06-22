@@ -1,0 +1,52 @@
+<!doctype html><html><head><meta charset='utf-8'>
+<title>Wildfire EWS · Evaluation</title><style>
+body{background:#0a0e13;color:#cdd8e1;font-family:ui-monospace,monospace;margin:0;padding:32px}
+h1{font-size:22px;letter-spacing:.04em}h1 b{color:#2dd4bf}
+h2{color:#647686;font-size:13px;letter-spacing:.16em;text-transform:uppercase;
+margin:34px 0 10px;border-top:1px solid #1d2a35;padding-top:18px}
+p{color:#8aa0b0;font-size:13px;max-width:760px}
+img{max-width:100%;border:1px solid #1d2a35;border-radius:8px;background:#0e151d;margin:8px 0}
+.row{display:flex;gap:16px;flex-wrap:wrap}.row img{max-width:48%}
+</style></head><body>
+<h1>Wildfire <b>Early Warning System</b> · Evaluation report</h1>
+<p>British Columbia · GAT-LSTM main model · top-10 features · 70:30 split.</p>
+<h2>Dataset — class balance & seasonality</h2><p>Class balance, day-of-year fire rate, per-feature fire vs no-fire distributions, and feature correlation. Top-10 features from paper Table 9: swvl1, mn2t, lgws, pev, DOY, gwd, blh, mgws, vilwd, swvl2.</p><div class='row'>
+<img src='data_class_balance.png'>
+<img src='data_seasonality.png'>
+<img src='data_feature_distributions.png'>
+<img src='data_correlation.png'>
+</div>
+<h2>Dataset — temporal patterns</h2><p>Daily fire count over the simulation period and monthly aggregation showing BC's summer fire peak (July-September).</p><div class='row'>
+<img src='data_fire_timeline.png'>
+<img src='data_monthly_rate.png'>
+</div>
+<h2>Dataset — feature importance</h2><p>RF feature importance on top-10 features. swvl1 (volumetric soil water) dominates, consistent with paper Table 9.</p><div class='row'>
+<img src='data_feature_importance.png'>
+</div>
+<h2>Training — GAT-LSTM  (50 epochs max · cosine LR · early stopping on F2)</h2><p>Real GAT-LSTM training curves: loss falls as accuracy, recall, F1, F2, and AUC rise. CosineAnnealingLR (T_max=50, eta_min=1e-5) + gradient clipping (max_norm=1.0). Early stopping on F2 with patience=10. Best-F2 checkpoint is restored.</p><div class='row'>
+<img src='training_history.png'>
+</div>
+<h2>Performance — GAT-LSTM (primary model)</h2><p>Full diagnostic suite for the primary GAT-LSTM model: ROC curve, PR curve, confusion matrix at F1-optimal threshold, threshold sweep, calibration, risk-tier distribution, probability separation by class, and error breakdown per tier.</p><div class='row'>
+<img src='roc_curve.png'>
+<img src='pr_curve.png'>
+<img src='confusion_matrix.png'>
+<img src='threshold_sweep.png'>
+<img src='calibration.png'>
+<img src='risk_tiers.png'>
+<img src='prob_distribution.png'>
+<img src='error_breakdown.png'>
+</div>
+<h2>Precision deep-dive — GAT-LSTM</h2><p>Three-panel precision analysis for GAT-LSTM. At threshold=0.5: Precision=79.2%, Recall=96.7%, F2=92.7%. False alarm interpretation: 1 in 4.8 alerts is a false alarm. F2 score (beta=2) weights recall 2× more than precision — the correct metric for a fire EWS where missed fires are catastrophic.</p><div class='row'>
+<img src='precision_deep_dive.png'>
+</div>
+<h2>Spatial analysis — GAT-LSTM node performance</h2><p>Per-node F1 score on the 10x10 BC sensor grid. Graph attention means nearby fire nodes elevate neighbours — nodes with lower F1 are geographically isolated from training fire events.</p><div class='row'>
+<img src='node_performance_heatmap.png'>
+</div>
+<h2>Model comparison — GAT-LSTM vs paper baselines (Table 4 hyperparameters)</h2><p>GAT-LSTM (our primary spatial-temporal model) vs the five paper baselines: RNN+LSTM, CatBoost, RandomForest, XGBoost, LightGBM. Paper best on real 3.6M BC records: CatBoost 93.4% acc, 92.1% F1, 0.94 AUC.</p><div class='row'>
+<img src='model_comparison.png'>
+<img src='model_metrics_heatmap.png'>
+</div>
+<h2>Model comparison — ROC curves</h2><p>All models on a single ROC plot. GAT-LSTM (teal) captures spatial fire propagation across the sensor graph — an advantage not available to tabular models.</p><div class='row'>
+<img src='roc_all_models.png'>
+</div>
+</body></html>
