@@ -1,4 +1,4 @@
-# Wildfire IoT Early Warning System (British Columbia)
+# Wildfire IoT Early Warning System 
 
 A live, GAT-LSTM-driven wildfire early warning system built from the Nasourinia
 & Passi (2025) BC wildfire study, with two deliberate changes:
