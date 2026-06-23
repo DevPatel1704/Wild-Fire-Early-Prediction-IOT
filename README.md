@@ -97,3 +97,42 @@ python -m stream.processor                    # live inference + storage
 uvicorn api.main:app --port 8000              # API + WebSocket
 docker compose up --build                     # everything at once
 ```
+## Team Contribution
+**Dhruv Patel**: Data Simulation & Sensor Network
+Responsibilities
+•	Understand the wildfire dataset. 
+•	Work on the sensor simulation module. 
+•	Generate sensor readings every 30 seconds. 
+•	Create wildfire scenarios. 
+•	Validate generated data. 
+**Dev Vimalkumar Patel**: Data Streaming & Pipeline
+Responsibilities
+•	Set up Kafka (or the streaming framework used). 
+•	Implement producer and consumer. 
+•	Process incoming sensor data. 
+•	Create aggregation windows. 
+•	Ensure data reaches the ML model. 
+**Rashmi Shikhariya**: Machine Learning (GAT-LSTM)
+Responsibilities
+•	Understand Graph Attention Networks. 
+•	Understand LSTM architecture. 
+•	Train the wildfire prediction model. 
+•	Tune hyperparameters. 
+•	Evaluate model performance. 
+**Priyankakumari Gupta**: Backend API & Alert System
+Responsibilities
+•	Build API endpoints. 
+•	Connect predictions to alerts. 
+•	Implement risk thresholds. 
+•	Integrate drone dispatch logic. 
+**Slesha Vora**: Dashboard, Visualization & Report
+Responsibilities
+•	Develop the frontend dashboard. 
+•	Create charts and visualizations. 
+•	Display fire-risk levels. 
+•	Prepare final report and presentation. 
+**Darshjignesh Pandya**
+Feature Engineering
+
+
+
