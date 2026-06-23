@@ -136,3 +136,55 @@ Feature Engineering
 
 
 
+## Team Contributions
+
+
+### Dhruv — Data Preparation & IoT Sensor Simulation
+
+1. Assembled the real wildfire dataset: ERA5 weather reanalysis, NFDB historical fire records, and NASA FIRMS active-hotspot feeds for British Columbia, 2019–2023 (~6.5M rows).
+2. Cleaned and labelled the data: joined fire records to the 0.25° ERA5 grid by date and location using Haversine distance (10 km radius), dropped incomplete rows, and set the binary fire label.
+3. Built a physics-based synthetic data fallback (`sources.synthesize()`) that generates realistic 2-year daily records across a 10×10 grid of BC nodes when real downloads are unavailable, using soil-moisture and temperature-driven fire logits with spatial aridity bias for BC's interior.
+4. Built the 100-node IoT simulator (`iot/simulator.py`) that streams ERA5-matched sensor readings into the live Kafka pipeline at configurable tick rates (default: 1 second per full sweep), seeding 5 elevated-risk nodes to drive realistic High/Critical alert behaviour, and validated the streamed output end-to-end.
+
+
+### Dev — Data Streaming, Pipeline & ML Benchmarks
+
+1. Set up Apache Kafka as the message bus and implemented the IoT producer/consumer that moves sensor readings (100 nodes × 10 features, JSON-encoded) through the `sensor.readings` topic at 100 messages per tick (1-second default cadence).
+2. Built the stream processor (`stream/processor.py`) with a 60-second cadence scorer for XGBoost fast alerts and a rolling 7-frame buffer for GAT-LSTM forecasts — both running concurrently against the same incoming stream.
+3. Created the aggregation pipeline: snapping raw ERA5 grid cells to the nearest of the 100 virtual sensor nodes, building 7-day sliding windows shaped `[T=7, N=100, F=10]`, and ensuring data reliably reaches both models before persisting predictions to SQLite and InfluxDB.
+4. Trained and benchmarked the four tabular/classical ML models used as comparison baselines — **Random Forest** (100 trees, max depth 10, AUC 0.938), **XGBoost** (200 estimators, depth 6, `scale_pos_weight`, AUC 0.937), **LightGBM** (200 leaves, lr 0.05, 100 estimators, AUC 0.937), and **CatBoost** (500 iterations, lr 0.05, depth 6, AUC 0.938) — and implemented `RNN+LSTM` (2 × 64 LSTM units, Adam lr 0.001, AUC 0.943) as the paper's own sequence baseline, with all results written to `artifacts/model_results.json`.
+5. Measured end-to-end latency and confirmed the system meets the <60-second alert SLA from sensor reading to dashboard update.
+
+
+### Rashmi — Machine Learning (GAT-LSTM)
+
+1. Designed and implemented the **GAT-LSTM** architecture: a two-layer Graph Attention Network (4 attention heads, 100 nodes, k=4 neighbour graph) feeding a 2-layer LSTM (hidden size 128) over 7-day windows, with LayerNorm after both the spatial and temporal stages and a two-layer dense head (128 → 64 → 1 with GELU) outputting per-node fire probability.
+2. Handled the severe class imbalance with Random Undersampling on the training split and `BCEWithLogitsLoss` positive-class weighting, achieving a final test **AUC of 0.945**, **Recall of 96.4%**, Precision 61.7%, F1 0.753, and F2 0.867 — the highest AUC of all six models evaluated.
+3. Tuned hyperparameters (Adam lr 0.001, batch size 16, 20 epochs, best-checkpoint saving on test AUC) and validated that the graph attention mechanism correctly propagates risk across spatially connected nodes, with GAT-LSTM outperforming the equivalent RNN+LSTM baseline (AUC 0.943) by confirming the spatial graph adds predictive value.
+4. Evaluated all models prioritising AUC and Recall over accuracy given class imbalance, produced confusion matrices, ROC/PR curves, and the model comparison table saved to `artifacts/eval/` and surfaced in the dashboard Results tab.
+
+
+### Priyanka — Backend API & Alert System
+
+1. Built the **FastAPI** backend (`api/main.py`) serving the full system: REST endpoints (`/health`, `/nodes`, `/alerts`, `/eval-results`) plus a **WebSocket** channel (`/ws`) that fans out live predictions to all connected dashboard clients simultaneously.
+2. Connected model predictions to the alert layer: the stream processor scores each of the 100 nodes through the inference engine, which tiers each node's score; the API surfaces High and Critical tier entries as timestamped alerts from the SQLite store.
+3. Implemented **percentile-based risk tiering** in the inference engine: nodes are ranked within each prediction batch and split at the 25th, 50th, and 75th percentiles into Low, Medium, High, and Critical tiers — so spatial gradients remain visible even when absolute probabilities cluster high in peak fire season.
+4. Wired **SQLite** (`artifacts/ews.db`) for alert history and **InfluxDB** for raw sensor time-series storage; exposed the `/demo/push` endpoint that accepts predictions without Kafka, enabling `replay_test_stream.py` to drive the full dashboard in a no-Docker demo environment.
+
+
+### Slesha — Dashboard, Visualization & Report
+
+1. Built the **React + Vite** dashboard (`dashboard/`) with a live risk map colour-coding all 100 sensor nodes by fire probability (teal → amber → orange → red for Low/Medium/High/Critical), k-NN edge overlay showing spatial topology, and real-time updates over WebSocket.
+2. Created the three-tab layout: **GAT-LSTM** tab (7-minute spatial-temporal forecast with countdown timer and alert feed), **XGBoost** tab (60-second fast-alert view with tabular risk), and **Results** tab (offline model comparison table across all six models, ROC/PR curves, confusion matrices, training history, and per-node F1 map).
+3. Displayed live detection stats — active High/Critical node count, last-update timestamp, risk tier distribution histogram — and wired the alert panel to surface only actionable High/Critical events with node ID, coordinates, probability, and model source.
+4. Led the final report and presentation, consolidating system architecture, model results, and design decisions into the project deliverable.
+
+
+### Darsh — Feature Engineering & Feature Selection
+
+1. Reduced ERA5's full climate variable catalog to the final top-10 predictors using a 3-method consensus ranking: Mutual Information (non-linear dependency), Random Forest feature importance (tree-based splitting gain), and Pearson Correlation (linear baseline) — rankings averaged so no single method dominates.
+2. Engineered the `DOY` (day-of-year) feature to capture BC's fire seasonality signal (July–August peak), which ranked 5th in the averaged consensus across all three methods.
+3. Identified `swvl1` (volumetric soil water, top layer) as the single strongest predictor: dry surface soil drives vegetation stress, lowers fuel moisture, and precedes ignition — confirmed as the top-ranked feature by all three selection methods independently.
+4. Delivered the final `TOP_10_FEATURES` list (`swvl1`, `mn2t`, `lgws`, `pev`, `DOY`, `gwd`, `blh`, `mgws`, `vilwd`, `swvl2`) and the fitted min-max scaler (`artifacts/scaler.json`) used by all downstream models and the live inference engine.
+
+
