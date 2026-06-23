@@ -1,8 +1,7 @@
 __pycache__/
 *.pyc
-artifacts/*.pt
-artifacts/*.json
 artifacts/*.db
+catboost_info/
 data/raw/*
 data/processed/*
 dashboard/node_modules/
