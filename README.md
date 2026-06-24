@@ -115,7 +115,7 @@ docker compose up --build                     # everything at once
 1. Designed and implemented the **GAT-LSTM** architecture: a two-layer Graph Attention Network (4 attention heads, 100 nodes, k=4 neighbour graph) feeding a 2-layer LSTM (hidden size 128) over 7-day windows, with LayerNorm after both the spatial and temporal stages and a two-layer dense head (128 → 64 → 1 with GELU) outputting per-node fire probability.
 2. Handled the severe class imbalance with Random Undersampling on the training split and `BCEWithLogitsLoss` positive-class weighting, achieving a final test **AUC of 0.969**, **Recall of 96.7%**, Precision 79.2%, F1 0.871, and F2 0.927 - the highest F2 of all six models evaluated.
 3. Tuned hyperparameters (Adam lr 0.001, batch size 16, 20 epochs, best-checkpoint saving on test AUC) and validated that the graph attention mechanism correctly propagates risk across spatially connected nodes, with GAT-LSTM outperforming the equivalent RNN+LSTM baseline (AUC 0.968) by confirming the spatial graph adds predictive value.
-4. Evaluated all models prioritising AUC and Recall over accuracy given class imbalance, produced confusion matrices, ROC/PR curves, and the model comparison table saved to `artifacts/eval/` and surfaced in the dashboard Results tab.
+4. Evaluated all models prioritising AUC and Recall over accuracy given class imbalance, produced confusion matrices, ROC/PR curves, and the model comparison table saved to `artifacts/eval/` and surfaced in the dashboard Results tab. Wrote Final Report.
 
 ### Dhruv: Data Preparation & IoT Sensor Simulation
 
@@ -138,13 +138,10 @@ docker compose up --build                     # everything at once
 1. Built the **React + Vite** dashboard (`dashboard/`) with a live risk map colour-coding all 100 sensor nodes by fire probability (teal → amber → orange → red for Low/Medium/High/Critical), k-NN edge overlay showing spatial topology, and real-time updates over WebSocket.
 2. Created the three-tab layout: **GAT-LSTM** tab (7-minute spatial-temporal forecast with countdown timer and alert feed), **XGBoost** tab (60-second fast-alert view with tabular risk), and **Results** tab (offline model comparison table across all six models, ROC/PR curves, confusion matrices, training history, and per-node F1 map).
 3. Displayed live detection stats - active High/Critical node count, last-update timestamp, risk tier distribution histogram - and wired the alert panel to surface only actionable High/Critical events with node ID, coordinates, probability, and model source.
-4. Led the final report and presentation, consolidating system architecture, model results, and design decisions into the project deliverable.
 
 
 ### Darsh: Feature Engineering & Feature Selection
 
-1. Reduced ERA5's full climate variable catalog to the final top-10 predictors using a 3-method consensus ranking: Mutual Information (non-linear dependency), Random Forest feature importance (tree-based splitting gain), and Pearson Correlation (linear baseline) - rankings averaged so no single method dominates.
-2. Identified `swvl1` (volumetric soil water, top layer) as the single strongest predictor: dry surface soil drives vegetation stress, lowers fuel moisture, and precedes ignition - confirmed as the top-ranked feature by all three selection methods independently.
-3. Delivered the final `TOP_10_FEATURES` list (`swvl1`, `mn2t`, `lgws`, `pev`, `DOY`, `gwd`, `blh`, `mgws`, `vilwd`, `swvl2`) and the fitted min-max scaler (`artifacts/scaler.json`) used by all downstream models and the live inference engine.
+1. Optimizing features from raw data to make them more meaningful for machine learning models
 
 
